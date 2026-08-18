@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- ENUMS ---
+enum Role {
+  ADMIN
+  MAHASISWA
+}
+
+enum DayOfWeek {
+  SENIN
+  SELASA
+  RABU
+  KAMIS
+  JUMAT
+  SABTU
+}
+
+// --- MODELS ---
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String   // Akan di-hash (misal menggunakan bcrypt)
+  role      Role     @default(MAHASISWA)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id          String     @id @default(cuid())
+  code        String     @unique // Kode MK, misal: "IF101"
+  name        String     // Nama Matakuliah
+  credits     Int        // SKS
+  semester    Int
+  schedules   Schedule[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Lecturer {
+  id        String     @id @default(cuid())
+  nip       String     @unique
+  name      String
+  schedules Schedule[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Room {
+  id        String     @id @default(cuid())
+  name      String     @unique // Misal: "Lab Komputer 1"
+  capacity  Int
+  schedules Schedule[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Schedule {
+  id          String    @id @default(cuid())
+  dayOfWeek   DayOfWeek
+  startTime   String    // Format "HH:mm", misal "08:00"
+  endTime     String    // Format "HH:mm", misal "09:40"
+  
+  // Relasi
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  lecturerId  String
+  lecturer    Lecturer  @relation(fields: [lecturerId], references: [id], onDelete: Restrict)
+  
+  roomId      String
+  room        Room      @relation(fields: [roomId], references: [id], onDelete: Restrict)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Mencegah duplikasi jadwal di ruangan yang sama pada waktu yang sama
+  @@unique([roomId, dayOfWeek, startTime])
+  // Mencegah dosen mengajar di dua tempat pada waktu yang sama
+  @@unique([lecturerId, dayOfWeek, startTime])
+}
