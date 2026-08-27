@@ -1,17 +1,24 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+// Mendefinisikan params sebagai Promise sesuai standar Next.js 16+ App Router
+type RouteParams = {
+  params: Promise<{ id: string }>;
+};
+
+export async function PATCH(request: Request, { params }: RouteParams) {
   try {
+    // Await params karena di Next.js terbaru ini adalah proses asinkron
+    const resolvedParams = await params;
+    const scheduleId = resolvedParams.id;
+
     const body = await request.json();
     const { dayOfWeek, startTime, endTime, courseId, lecturerId, roomId } = body;
 
-    // Validasi Bentrok (jika waktu, ruangan, atau dosen diubah)
-    // Kita perlu mengecualikan jadwal yang sedang diedit ini agar tidak "bentrok dengan dirinya sendiri"
+    // Validasi Bentrok
     if (dayOfWeek || startTime || endTime || roomId || lecturerId) {
-      // Ambil jadwal yang akan diedit untuk mendapatkan data terkininya
       const currentSchedule = await prisma.schedule.findUnique({
-        where: { id: params.id },
+        where: { id: scheduleId },
       });
 
       if (!currentSchedule) {
@@ -27,37 +34,38 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       // Cek bentrok ruangan
       const roomConflict = await prisma.schedule.findFirst({
         where: {
-          id: { not: params.id }, // Kecualikan jadwal ini
+          id: { not: scheduleId },
           roomId: checkRoomId,
           dayOfWeek: checkDayOfWeek,
           AND: [{ startTime: { lt: checkEndTime } }, { endTime: { gt: checkStartTime } }],
         },
       });
 
-      if (roomConflict) return NextResponse.json({ error: "Ruangan bentrok pada waktu yang diubah" }, { status: 409 });
+      if (roomConflict !== null) return NextResponse.json({ error: "Ruangan bentrok pada waktu yang diubah" }, { status: 409 });
 
       // Cek bentrok dosen
       const lecturerConflict = await prisma.schedule.findFirst({
         where: {
-          id: { not: params.id },
+          id: { not: scheduleId },
           lecturerId: checkLecturerId,
           dayOfWeek: checkDayOfWeek,
           AND: [{ startTime: { lt: checkEndTime } }, { endTime: { gt: checkStartTime } }],
         },
       });
 
-      if (lecturerConflict) return NextResponse.json({ error: "Dosen bentrok pada waktu yang diubah" }, { status: 409 });
+      if (lecturerConflict !== null) return NextResponse.json({ error: "Dosen bentrok pada waktu yang diubah" }, { status: 409 });
     }
 
+    // Parser-friendly spread operation (menggunakan ternary)
     const updatedSchedule = await prisma.schedule.update({
-      where: { id: params.id },
+      where: { id: scheduleId },
       data: {
-        ...(dayOfWeek && { dayOfWeek }),
-        ...(startTime && { startTime }),
-        ...(endTime && { endTime }),
-        ...(courseId && { courseId }),
-        ...(lecturerId && { lecturerId }),
-        ...(roomId && { roomId }),
+        ...(dayOfWeek ? { dayOfWeek } : {}),
+        ...(startTime ? { startTime } : {}),
+        ...(endTime ? { endTime } : {}),
+        ...(courseId ? { courseId } : {}),
+        ...(lecturerId ? { lecturerId } : {}),
+        ...(roomId ? { roomId } : {}),
       },
       include: {
         course: true,
@@ -67,21 +75,28 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     });
 
     return NextResponse.json(updatedSchedule, { status: 200 });
-  } catch (error) {
-    console.error("Error updating schedule:", error);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("Error updating schedule:", error.message);
+    }
     return NextResponse.json({ error: "Gagal memperbarui jadwal" }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: RouteParams) {
   try {
+    const resolvedParams = await params;
+    const scheduleId = resolvedParams.id;
+
     await prisma.schedule.delete({
-      where: { id: params.id },
+      where: { id: scheduleId },
     });
 
     return NextResponse.json({ message: "Jadwal berhasil dihapus" }, { status: 200 });
-  } catch (error) {
-    console.error("Error deleting schedule:", error);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("Error deleting schedule:", error.message);
+    }
     return NextResponse.json({ error: "Gagal menghapus jadwal" }, { status: 500 });
   }
 }

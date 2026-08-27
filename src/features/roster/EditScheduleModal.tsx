@@ -5,18 +5,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Course, Lecturer, Room } from "../../../generated/prisma/client";
+import type { ScheduleWithDetails } from "@/src/types";
 
 const scheduleSchema = z
   .object({
-    dayOfWeek: z.enum(["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"], {
-      errorMap: () => ({ message: "Pilih hari perkuliahan" }),
-    }),
-    startTime: z.string().min(4, "Pilih waktu mulai"),
-    endTime: z.string().min(4, "Pilih waktu selesai"),
-    courseId: z.string().min(1, "Pilih matakuliah"),
-    lecturerId: z.string().min(1, "Pilih dosen"),
-    roomId: z.string().min(1, "Pilih ruangan"),
+    dayOfWeek: z.enum(["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"]),
+    startTime: z.string().min(4),
+    endTime: z.string().min(4),
+    courseId: z.string().min(1),
+    lecturerId: z.string().min(1),
+    roomId: z.string().min(1),
   })
   .refine(
     (data) => {
@@ -30,51 +30,50 @@ const scheduleSchema = z
 
 type ScheduleFormValues = z.infer<typeof scheduleSchema>;
 
-interface AddScheduleFormProps {
+type EditScheduleModalProps = {
+  schedule: ScheduleWithDetails;
   courses: Course[];
   lecturers: Lecturer[];
   rooms: Room[];
-}
+  onClose: () => void;
+};
 
-export default function AddScheduleForm({ courses, lecturers, rooms }: AddScheduleFormProps) {
+export default function EditScheduleModal({ schedule, courses, lecturers, rooms, onClose }: EditScheduleModalProps) {
   const router = useRouter();
   const [apiError, setApiError] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
 
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm<ScheduleFormValues>({
     resolver: zodResolver(scheduleSchema),
+    defaultValues: {
+      dayOfWeek: schedule.dayOfWeek as "SENIN" | "SELASA" | "RABU" | "KAMIS" | "JUMAT" | "SABTU",
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      courseId: schedule.courseId,
+      lecturerId: schedule.lecturerId,
+      roomId: schedule.roomId,
+    },
   });
 
   const onSubmit = async (data: ScheduleFormValues) => {
     setApiError("");
-    setIsSuccess(false);
-
     try {
-      const res = await fetch("/api/schedules", {
-        method: "POST",
+      const res = await fetch("/api/schedules/" + schedule.id, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
       if (res.ok === false) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Gagal menyimpan jadwal");
+        throw new Error(errorData.error || "Gagal mengupdate jadwal");
       }
 
-      setIsSuccess(true);
-      reset();
       router.refresh();
-
-      setTimeout(() => {
-        setIsSuccess(false);
-        setIsOpen(false);
-      }, 2000);
+      onClose();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setApiError(err.message);
@@ -84,27 +83,31 @@ export default function AddScheduleForm({ courses, lecturers, rooms }: AddSchedu
     }
   };
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 mb-8 overflow-hidden">
-      <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setIsOpen(!isOpen)}>
-        <h3 className="text-sm font-semibold text-slate-800">{isOpen === true ? "Tutup Form Penjadwalan" : "+ Buat Jadwal Baru"}</h3>
-      </div>
+  const handleOpenChange = (open: boolean) => {
+    if (open === false) {
+      onClose();
+    }
+  };
 
-      {isOpen === true ? (
-        <div className="p-6">
+  // Pastikan bagian return ini tidak terputus oleh baris kosong yang salah
+  return (
+    <Dialog open={true} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold text-slate-800">Edit Jadwal Kuliah</DialogTitle>
+        </DialogHeader>
+
+        <div className="mt-2">
           {apiError !== "" ? <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm border border-red-100">{apiError}</div> : null}
 
-          {isSuccess === true ? <div className="mb-4 p-3 bg-emerald-50 text-emerald-600 rounded-md text-sm border border-emerald-100">Jadwal berhasil ditambahkan!</div> : null}
-
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Matakuliah</label>
-                <select {...register("courseId")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:ring-2 focus:ring-indigo-500">
-                  <option value="">-- Pilih Matakuliah --</option>
+                <select {...register("courseId")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white">
                   {courses.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.code} - {c.name}
+                      {c.name}
                     </option>
                   ))}
                 </select>
@@ -113,8 +116,7 @@ export default function AddScheduleForm({ courses, lecturers, rooms }: AddSchedu
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Dosen Pengampu</label>
-                <select {...register("lecturerId")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:ring-2 focus:ring-indigo-500">
-                  <option value="">-- Pilih Dosen --</option>
+                <select {...register("lecturerId")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white">
                   {lecturers.map((l) => (
                     <option key={l.id} value={l.id}>
                       {l.name}
@@ -126,8 +128,7 @@ export default function AddScheduleForm({ courses, lecturers, rooms }: AddSchedu
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Ruangan</label>
-                <select {...register("roomId")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:ring-2 focus:ring-indigo-500">
-                  <option value="">-- Pilih Ruangan --</option>
+                <select {...register("roomId")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white">
                   {rooms.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.name} (Kap: {r.capacity})
@@ -139,39 +140,40 @@ export default function AddScheduleForm({ courses, lecturers, rooms }: AddSchedu
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Hari</label>
-                <select {...register("dayOfWeek")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:ring-2 focus:ring-indigo-500">
-                  <option value="">-- Pilih Hari --</option>
-                  <option value="SENIN">SENIN</option>
-                  <option value="SELASA">SELASA</option>
-                  <option value="RABU">RABU</option>
-                  <option value="KAMIS">KAMIS</option>
-                  <option value="JUMAT">JUMAT</option>
-                  <option value="SABTU">SABTU</option>
+                <select {...register("dayOfWeek")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white">
+                  {["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"].map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
                 </select>
                 {errors.dayOfWeek ? <p className="text-red-500 text-xs mt-1">{errors.dayOfWeek.message}</p> : null}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Jam Mulai</label>
-                <input type="time" {...register("startTime")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500" />
+                <input type="time" {...register("startTime")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" />
                 {errors.startTime ? <p className="text-red-500 text-xs mt-1">{errors.startTime.message}</p> : null}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Jam Selesai</label>
-                <input type="time" {...register("endTime")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500" />
+                <input type="time" {...register("endTime")} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" />
                 {errors.endTime ? <p className="text-red-500 text-xs mt-1">{errors.endTime.message}</p> : null}
               </div>
             </div>
 
-            <div className="flex justify-end pt-4 border-t border-slate-100 mt-4">
-              <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50">
-                {isSubmitting === true ? "Menyimpan..." : "Simpan Jadwal"}
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 mt-4">
+              <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-md text-sm font-medium hover:bg-slate-200">
+                Batal
+              </button>
+              <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-50">
+                {isSubmitting === true ? "Menyimpan..." : "Simpan Perubahan"}
               </button>
             </div>
           </form>
         </div>
-      ) : null}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

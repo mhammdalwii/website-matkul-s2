@@ -56,7 +56,7 @@ export default async function Home({ searchParams }: PageProps) {
 
       <FilterBar />
 
-      <ScheduleTable schedules={schedules} />
+      <ScheduleTable schedules={schedules} courses={courses} lecturers={lecturers} rooms={rooms} />
     </MainLayout>
   );
 }

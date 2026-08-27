@@ -1,0 +1,98 @@
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useRouter } from "next/navigation";
+
+// Skema Validasi Zod
+const lecturerSchema = z.object({
+  nip: z.string().min(5, "NIP/NIDN minimal 5 karakter"),
+  name: z.string().min(3, "Nama dosen minimal 3 karakter (beserta gelar jika ada)"),
+});
+
+type LecturerFormValues = z.infer<typeof lecturerSchema>;
+
+export default function AddLecturerForm() {
+  const router = useRouter();
+  const [apiError, setApiError] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<LecturerFormValues>({
+    resolver: zodResolver(lecturerSchema),
+  });
+
+  const onSubmit = async (data: LecturerFormValues) => {
+    setApiError("");
+    setIsSuccess(false);
+
+    try {
+      const res = await fetch("/api/lecturers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok === false) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Gagal menyimpan data dosen");
+      }
+
+      setIsSuccess(true);
+      reset();
+      router.refresh();
+
+      setTimeout(() => {
+        setIsSuccess(false);
+      }, 3000);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setApiError(err.message);
+      } else {
+        setApiError("Terjadi kesalahan yang tidak diketahui");
+      }
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-8">
+      <h3 className="text-lg font-semibold text-slate-800 mb-4">Tambah Data Dosen</h3>
+
+      {apiError !== "" ? <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm border border-red-100">{apiError}</div> : null}
+
+      {isSuccess === true ? <div className="mb-4 p-3 bg-emerald-50 text-emerald-600 rounded-md text-sm border border-emerald-100">Data dosen berhasil ditambahkan!</div> : null}
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">NIP / NIDN</label>
+            <input {...register("nip")} placeholder="Contoh: 198001012005011002" className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            {errors.nip ? <p className="text-red-500 text-xs mt-1">{errors.nip.message}</p> : null}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Nama Lengkap & Gelar</label>
+            <input {...register("name")} placeholder="Contoh: Dr. Ir. Budi Santoso, M.Kom." className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            {errors.name ? <p className="text-red-500 text-xs mt-1">{errors.name.message}</p> : null}
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting === true ? "Menyimpan..." : "Simpan Dosen"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
