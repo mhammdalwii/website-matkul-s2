@@ -1,11 +1,11 @@
 import MainLayout from "@/src/layouts/MainLayout";
 import AddRoomForm from "@/src/features/rooms/AddRoomForm";
+import DeleteConfirmButton from "@/components/DeleteConfirmButton";
+import EditRoomModal from "@/src/features/rooms/EditRoomModal";
 import prisma from "@/lib/prisma";
 
 export default async function RoomsPage() {
-  const rooms = await prisma.room.findMany({
-    orderBy: { name: "asc" },
-  });
+  const rooms = await prisma.room.findMany({ orderBy: { name: "asc" } });
 
   return (
     <MainLayout>
@@ -22,13 +22,14 @@ export default async function RoomsPage() {
             <tr>
               <th className="px-6 py-4 whitespace-nowrap w-2/3">Nama Ruangan</th>
               <th className="px-6 py-4 whitespace-nowrap">Kapasitas</th>
+              <th className="px-6 py-4 whitespace-nowrap text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rooms.length === 0 ? (
               <tr>
-                <td colSpan={2} className="px-6 py-12 text-center text-slate-500">
-                  Belum ada data ruangan yang ditambahkan.
+                <td colSpan={3} className="px-6 py-12 text-center text-slate-500">
+                  Belum ada data ruangan.
                 </td>
               </tr>
             ) : (
@@ -36,6 +37,12 @@ export default async function RoomsPage() {
                 <tr key={room.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 font-medium text-slate-900">{room.name}</td>
                   <td className="px-6 py-4 text-slate-700">{room.capacity} Orang</td>
+                  <td className="px-6 py-4 text-center whitespace-nowrap">
+                    <div className="flex justify-center items-center gap-2">
+                      <EditRoomModal room={room} />
+                      <DeleteConfirmButton id={room.id} endpoint="/api/rooms" />
+                    </div>
+                  </td>
                 </tr>
               ))
             )}

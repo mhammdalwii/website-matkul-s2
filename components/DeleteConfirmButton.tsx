@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 type DeleteConfirmButtonProps = {
   id: string;
@@ -27,11 +28,12 @@ export default function DeleteConfirmButton({ id, endpoint }: DeleteConfirmButto
 
       router.refresh();
       setIsOpen(false);
+      toast.success("Data berhasil dihapus!");
     } catch (error: unknown) {
       if (error instanceof Error) {
-        alert(error.message);
+        toast.error(error.message);
       } else {
-        alert("Terjadi kesalahan sistem saat menghapus data.");
+        toast.error("Terjadi kesalahan sistem saat menghapus data.");
       }
     } finally {
       setIsDeleting(false);

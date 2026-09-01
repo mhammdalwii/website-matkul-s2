@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 // Skema Validasi Zod untuk Ruangan
 const roomSchema = z.object({
@@ -16,8 +16,6 @@ type RoomFormValues = z.infer<typeof roomSchema>;
 
 export default function AddRoomForm() {
   const router = useRouter();
-  const [apiError, setApiError] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
 
   const {
     register,
@@ -29,9 +27,6 @@ export default function AddRoomForm() {
   });
 
   const onSubmit = async (data: RoomFormValues) => {
-    setApiError("");
-    setIsSuccess(false);
-
     try {
       const res = await fetch("/api/rooms", {
         method: "POST",
@@ -44,18 +39,16 @@ export default function AddRoomForm() {
         throw new Error(errorData.error || "Gagal menyimpan data ruangan");
       }
 
-      setIsSuccess(true);
+      toast.success("Ruangan berhasil ditambahkan!");
       reset();
       router.refresh();
 
-      setTimeout(() => {
-        setIsSuccess(false);
-      }, 3000);
+      setTimeout(() => {}, 3000);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setApiError(err.message);
+        toast.error(err.message);
       } else {
-        setApiError("Terjadi kesalahan yang tidak diketahui");
+        toast.error("Terjadi kesalahan yang tidak diketahui");
       }
     }
   };
@@ -63,10 +56,6 @@ export default function AddRoomForm() {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-8">
       <h3 className="text-lg font-semibold text-slate-800 mb-4">Tambah Data Ruangan</h3>
-
-      {apiError !== "" ? <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm border border-red-100">{apiError}</div> : null}
-
-      {isSuccess === true ? <div className="mb-4 p-3 bg-emerald-50 text-emerald-600 rounded-md text-sm border border-emerald-100">Data ruangan berhasil ditambahkan!</div> : null}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,11 +1,11 @@
 import MainLayout from "@/src/layouts/MainLayout";
 import AddLecturerForm from "@/src/features/lecturers/AddLecturerForm";
+import DeleteConfirmButton from "@/components/DeleteConfirmButton";
+import EditLecturerModal from "@/src/features/lecturers/EditLecturerModal";
 import prisma from "@/lib/prisma";
 
 export default async function LecturersPage() {
-  const lecturers = await prisma.lecturer.findMany({
-    orderBy: { name: "asc" },
-  });
+  const lecturers = await prisma.lecturer.findMany({ orderBy: { name: "asc" } });
 
   return (
     <MainLayout>
@@ -22,13 +22,14 @@ export default async function LecturersPage() {
             <tr>
               <th className="px-6 py-4 whitespace-nowrap w-1/3">NIP / NIDN</th>
               <th className="px-6 py-4">Nama Lengkap & Gelar</th>
+              <th className="px-6 py-4 whitespace-nowrap text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {lecturers.length === 0 ? (
               <tr>
-                <td colSpan={2} className="px-6 py-12 text-center text-slate-500">
-                  Belum ada data dosen yang ditambahkan.
+                <td colSpan={3} className="px-6 py-12 text-center text-slate-500">
+                  Belum ada data dosen.
                 </td>
               </tr>
             ) : (
@@ -36,6 +37,12 @@ export default async function LecturersPage() {
                 <tr key={lecturer.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 font-medium text-slate-900">{lecturer.nip}</td>
                   <td className="px-6 py-4 text-slate-700">{lecturer.name}</td>
+                  <td className="px-6 py-4 text-center whitespace-nowrap">
+                    <div className="flex justify-center items-center gap-2">
+                      <EditLecturerModal lecturer={lecturer} />
+                      <DeleteConfirmButton id={lecturer.id} endpoint="/api/lecturers" />
+                    </div>
+                  </td>
                 </tr>
               ))
             )}

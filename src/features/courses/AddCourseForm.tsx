@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 // Skema Validasi Zod
 const courseSchema = z.object({
@@ -18,8 +18,6 @@ type CourseFormValues = z.infer<typeof courseSchema>;
 
 export default function AddCourseForm() {
   const router = useRouter();
-  const [apiError, setApiError] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
 
   const {
     register,
@@ -31,9 +29,6 @@ export default function AddCourseForm() {
   });
 
   const onSubmit = async (data: CourseFormValues) => {
-    setApiError("");
-    setIsSuccess(false);
-
     try {
       const res = await fetch("/api/courses", {
         method: "POST",
@@ -46,19 +41,19 @@ export default function AddCourseForm() {
         throw new Error(errorData.error || "Gagal menyimpan matakuliah");
       }
 
-      setIsSuccess(true);
+      toast.success("Matakuliah berhasil ditambahkan!");
+
       reset();
       router.refresh();
 
       setTimeout(() => {
-        setIsSuccess(false);
+        toast.dismiss();
       }, 3000);
     } catch (err: unknown) {
-      // Pengecekan error yang aman untuk parser TypeScript (tanpa tipe 'any')
       if (err instanceof Error) {
-        setApiError(err.message);
+        toast.error(err.message);
       } else {
-        setApiError("Terjadi kesalahan yang tidak diketahui");
+        toast.error("Terjadi kesalahan yang tidak diketahui");
       }
     }
   };
@@ -66,11 +61,6 @@ export default function AddCourseForm() {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-8">
       <h3 className="text-lg font-semibold text-slate-800 mb-4">Tambah Matakuliah Baru</h3>
-
-      {/* Menggunakan Ternary (? : null) alih-alih && agar parser tidak bingung */}
-      {apiError !== "" ? <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm border border-red-100">{apiError}</div> : null}
-
-      {isSuccess === true ? <div className="mb-4 p-3 bg-emerald-50 text-emerald-600 rounded-md text-sm border border-emerald-100">Matakuliah berhasil ditambahkan!</div> : null}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

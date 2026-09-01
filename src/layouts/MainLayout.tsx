@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useState } from "react";
 import { Menu, X } from "lucide-react";
+import { Toaster } from "react-hot-toast";
 
 type MainLayoutProps = {
   children: ReactNode;
@@ -68,6 +69,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </header>
         <div className="flex-1 overflow-y-auto p-4 md:p-8">{children}</div>
       </main>
+      <Toaster position="top-right" reverseOrder={false} />
     </div>
   );
 }
