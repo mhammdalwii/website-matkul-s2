@@ -47,6 +47,7 @@ model Course {
   credits     Int        // SKS
   semester    Int
   schedules   Schedule[]
+  tasks     Task[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
@@ -92,4 +93,16 @@ model Schedule {
   @@unique([roomId, dayOfWeek, startTime])
   // Mencegah dosen mengajar di dua tempat pada waktu yang sama
   @@unique([lecturerId, dayOfWeek, startTime])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String   // Nama tugasnya apa
+  deadline    DateTime // Kapan deadline-nya (tanggal & jam)
+  isCompleted Boolean  @default(false) // Status: true jika selesai, false jika belum
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

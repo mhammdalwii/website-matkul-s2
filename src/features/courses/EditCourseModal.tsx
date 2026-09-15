@@ -79,7 +79,7 @@ export default function EditCourseModal({ course }: { course: CourseData }) {
 
       {/* Pop-up Modal (Pure Tailwind) */}
       {isOpen === true ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 text-left">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/50 p-4 text-left">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
               <h3 className="font-semibold text-slate-800">Edit Matakuliah</h3>

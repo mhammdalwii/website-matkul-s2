@@ -19,6 +19,18 @@ type ScheduleTableProps = {
 export default function ScheduleTable({ schedules, courses, lecturers, rooms }: ScheduleTableProps) {
   const router = useRouter();
 
+  const getGoogleCalendarUrl = (schedule: ScheduleWithDetails) => {
+    const eventName = encodeURIComponent(`Kuliah: ${schedule.course.name}`);
+    const details = encodeURIComponent(`Dosen: ${schedule.lecturer.name}\nSKS: ${schedule.course.credits}\nKode: ${schedule.course.code}`);
+    const location = encodeURIComponent(`Ruangan: ${schedule.room.name}`);
+
+    // Karena jadwal kita menggunakan "Hari" (Senin, Selasa), URL ini akan membuka kalender
+    // di hari ini, tapi dengan form Nama, Dosen, Jam, dan Ruangan yang sudah terisi.
+    // Mahasiswa tinggal mengatur hari dan menekan opsi "Ulangi Setiap Minggu" di Google Calendar.
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${eventName}&details=${details}&location=${location}`;
+  };
+
   const [editingSchedule, setEditingSchedule] = useState<ScheduleWithDetails | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -91,6 +103,27 @@ export default function ScheduleTable({ schedules, courses, lecturers, rooms }: 
                       </button>
 
                       {/* Tombol pemicu Modal Hapus */}
+                      <button type="button" onClick={() => setDeletingId(schedule.id)} className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors">
+                        Hapus
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-center whitespace-nowrap">
+                    <div className="flex justify-center items-center gap-2">
+                      <a
+                        href={getGoogleCalendarUrl(schedule)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1"
+                        title="Simpan ke Google Calendar"
+                      >
+                        📅 Simpan
+                      </a>
+
+                      <button type="button" onClick={() => setEditingSchedule(schedule)} className="px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 transition-colors">
+                        Edit
+                      </button>
+
                       <button type="button" onClick={() => setDeletingId(schedule.id)} className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors">
                         Hapus
                       </button>

@@ -59,6 +59,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
           <Link href="/rooms" onClick={() => setIsSidebarOpen(false)} className={`block px-4 py-2 rounded-md font-medium transition-colors ${isActive("/rooms") ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}>
             Ruangan
           </Link>
+          <Link href="/tasks" className="block px-4 py-2 mt-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100 hover:text-indigo-700 transition-colors">
+            Tugas Kuliah
+          </Link>
         </nav>
       </aside>
 

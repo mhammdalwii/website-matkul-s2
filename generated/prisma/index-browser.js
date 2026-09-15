@@ -168,6 +168,16 @@ exports.Prisma.ScheduleScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.TaskScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  deadline: 'deadline',
+  isCompleted: 'isCompleted',
+  courseId: 'courseId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -196,7 +206,8 @@ exports.Prisma.ModelName = {
   Course: 'Course',
   Lecturer: 'Lecturer',
   Room: 'Room',
-  Schedule: 'Schedule'
+  Schedule: 'Schedule',
+  Task: 'Task'
 };
 
 /**
